@@ -65,11 +65,17 @@ erDiagram
 
 
 
-## Gatilhos, Procedures e Consultas
+## Gatilhos, Procedures Views e Consultas
 
 ### Gatilhos
 
 #### Criação do gatilho `trg_audit_emprestimo` para auditoria de operações na tabela `tb_emprestimo`
+
+
+Esse gatilho (trg_audit_emprestimo) é acionado automaticamente após operações de inserção, atualização ou exclusão na tabela tb_emprestimo. Ele registra essas ações na tabela de auditoria (tb_auditoria), incluindo detalhes como tipo de operação, ID do empréstimo e usuário que realizou a alteração. Gatilhos servem para monitorar e automatizar ações no banco de dados, ajudando na manutenção de registros e na integridade dos dados.
+
+
+
 ```sql
 CREATE TRIGGER trg_audit_emprestimo
 ON tb_emprestimo
@@ -105,8 +111,56 @@ BEGIN
 END;
 ```
 
-#### Criação do gatilho `trg_audit_emprestimo` para auditoria de operações na tabela `tb_emprestimo`
+#### Criação de procedure `GetEmprestimosCliente ` para automação de consultas
 
+A procedure GetEmprestimosCliente automatiza a consulta de empréstimos feitos por um cliente específico, retornando dados como a data do empréstimo, status de devolução, título do livro e e-mail do usuário. Isso simplifica e padroniza as consultas complexas no banco de dados. Procedures são usadas para encapsular lógica de consultas ou manipulações, melhorando a reutilização e segurança no acesso aos dados.
+
+
+
+```sql
+ALTER PROCEDURE GetEmprestimosCliente 
+    @cliente NVARCHAR(100)
+AS
+BEGIN
+    SELECT 
+	  e.data_emprestimo AS data_da_aquisicao,
+	  e.status AS devolucao,
+	  l.titulo AS livro,
+	  u.email
+	FROM tb_emprestimo e 
+	     join tb_usuario u on  e.id_usuario = u.id_usuario
+		 join tb_livro l on e.id_livro = l.id_livro
+    WHERE u.nome = @cliente; 
+END
+
+
+EXEC GetEmprestimosCliente @cliente = 'Rodrigo Azevedo';
+```
+
+
+#### Criação de views `vw_status_emprestimo ` para automação e segurança 
+
+A view vw_status_emprestimo apresenta uma visão consolidada dos empréstimos, incluindo informações como o número de cadastro do cliente, nome, título do livro, data de locação e data de devolução. Ela facilita a visualização de dados relacionados sem a necessidade de recriar consultas complexas. Views são úteis para simplificar consultas e melhorar a legibilidade ao encapsular lógicas frequentes de acesso a dados.
+
+
+
+```sql
+ CREATE VIEW vw_status_emprestimo AS
+  SELECT
+   u.id_usuario as numero_cadastro,
+   u.nome as cliente,
+   l.titulo as livro,
+   e.data_emprestimo as data_de_locacao,
+   e.data_devolucao
+ FROM tb_usuario u
+       JOIN tb_emprestimo e ON u.id_usuario = e.id_usuario
+	   JOIN tb_livro l on e.id_livro = l.id_livro;
+
+
+ DROP VIEW IF EXISTS vw_status_emprestimo;
+
+ SELECT * from vw_status_emprestimo;  
+```
 
 
 
